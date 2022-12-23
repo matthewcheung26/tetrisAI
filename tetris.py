@@ -158,7 +158,7 @@ while not done:
     if counter > 100000:
         counter = 0
 
-    if counter % (fps // game.level // 2) == 0 or pressing_down:
+    if counter % (fps // game.level // 0.1) == 0 or pressing_down:
         if game.state == "start":
             game.go_down()
 
