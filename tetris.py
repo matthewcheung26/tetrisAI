@@ -1,6 +1,6 @@
-
 import pygame
 import random
+import tetris_ai
 
 colors = [
     (0, 0, 0),
@@ -16,23 +16,22 @@ colors = [
 class Figure:
     x = 0
     y = 0
-
     figures = [
-        [[1, 5, 9, 13], [4, 5, 6, 7]],
-        [[4, 5, 9, 10], [2, 6, 5, 9]],
-        [[6, 7, 9, 10], [1, 5, 6, 10]],
-        [[1, 2, 5, 9], [0, 4, 5, 6], [1, 5, 9, 8], [4, 5, 6, 10]],
-        [[1, 2, 6, 10], [5, 6, 7, 9], [2, 6, 10, 11], [3, 5, 6, 7]],
-        [[1, 4, 5, 6], [1, 4, 5, 9], [4, 5, 6, 9], [1, 5, 6, 9]],
-        [[1, 2, 5, 6]],
+        [[1, 5, 9, 13], [4, 5, 6, 7]],  # Line
+        [[1, 2, 5, 9], [0, 4, 5, 6], [1, 5, 9, 8], [4, 5, 6, 10]],  # G-right
+        [[1, 2, 6, 10], [5, 6, 7, 9], [2, 6, 10, 11], [3, 5, 6, 7]],  # G-left
+        [[1, 4, 5, 6], [1, 4, 5, 9], [4, 5, 6, 9], [1, 5, 6, 9]],  # x
+        [[1, 2, 5, 6]],  # block
     ]
+    type = 3
+    color = 1
+    rotation = 0
 
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.type = random.randint(0, len(self.figures) - 1)
-        self.color = random.randint(1, len(colors) - 1)
-        self.rotation = 0
+        self.type = random.randint(0,len(self.figures)-1)
+        self.color = random.randint(1,len(colors)-1)
 
     def image(self):
         return self.figures[self.type][self.rotation]
@@ -56,9 +55,6 @@ class Tetris:
     def __init__(self, height, width):
         self.height = height
         self.width = width
-        self.field = []
-        self.score = 0
-        self.state = "start"
         for i in range(height):
             new_line = []
             for j in range(width):
@@ -74,9 +70,9 @@ class Tetris:
             for j in range(4):
                 if i * 4 + j in self.figure.image():
                     if i + self.figure.y > self.height - 1 or \
-                            j + self.figure.x > self.width - 1 or \
-                            j + self.figure.x < 0 or \
-                            self.field[i + self.figure.y][j + self.figure.x] > 0:
+                                            j + self.figure.x > self.width - 1 or \
+                                            j + self.figure.x < 0 or \
+                                            self.field[i + self.figure.y][j + self.figure.x] > 0:
                         intersection = True
         return intersection
 
@@ -91,7 +87,7 @@ class Tetris:
                 lines += 1
                 for i1 in range(i, 1, -1):
                     for j in range(self.width):
-                        self.field[i1][j] = self.field[i1 - 1][j]
+                        self.field[i1][j] = self.field[i1-1][j]
         self.score += lines ** 2
 
     def go_space(self):
@@ -114,7 +110,7 @@ class Tetris:
         self.break_lines()
         self.new_figure()
         if self.intersects():
-            self.state = "gameover"
+            game.state = "gameover"
 
     def go_side(self, dx):
         old_x = self.figure.x
@@ -127,6 +123,7 @@ class Tetris:
         self.figure.rotate()
         if self.intersects():
             self.figure.rotation = old_rotation
+
 
 
 # Initialize the game engine
@@ -158,11 +155,12 @@ while not done:
     if counter > 100000:
         counter = 0
 
-    if counter % (fps // game.level // 0.1) == 0 or pressing_down:
+    if counter % (fps // game.level // 2) == 0 or pressing_down:
         if game.state == "start":
             game.go_down()
 
-    for event in pygame.event.get():
+    for event in list(pygame.event.get()) + tetris_ai.run_ai(
+        game.field, game.figure, game.width, game.height):
         if event.type == pygame.QUIT:
             done = True
         if event.type == pygame.KEYDOWN:
@@ -209,5 +207,11 @@ while not done:
     text_game_over1 = font1.render("Press ESC", True, (255, 215, 0))
 
     screen.blit(text, [0, 0])
-    
-    pygame.display.update()
+    if game.state == "gameover":
+        screen.blit(text_game_over, [20, 200])
+        screen.blit(text_game_over1, [25, 265])
+
+    pygame.display.flip()
+    clock.tick(fps)
+
+pygame.quit()
